@@ -1,12 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/store";
 import { QuickAddInput } from "@/features/tabs/components/QuickAddInput";
 import { TabList } from "./features/tabs/components/TabList";
 import { SearchInput } from "./features/search/components/SearchInput";
+import { TabImportModal } from "./features/tabs/components/TabImportModal";
 
 function App() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const tabCount = useStore((state) => state.tabs.length);
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!(e.key === "v" && (e.metaKey || e.ctrlKey))) return;
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      e.preventDefault();
+      setIsModalOpen(true);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [setIsModalOpen]);
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
@@ -18,6 +34,10 @@ function App() {
       </header>
 
       <main className="max-w-2xl mx-auto px-8 mt-6 flex flex-col gap-4">
+        <TabImportModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
         <SearchInput onSearch={setSearchQuery} />
         <QuickAddInput />
         <TabList search={searchQuery} />

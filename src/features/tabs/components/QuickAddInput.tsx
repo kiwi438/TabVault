@@ -2,28 +2,38 @@ import { useState } from "react";
 import { useStore } from "@/store";
 
 export function QuickAddInput() {
-  const [links, setLinks] = useState("");
+  const [link, setLink] = useState("");
   const addTabs = useStore((state) => state.addTabs);
-  const isDisabled = links.trim().length === 0;
+  const isDisabled = link.trim().length === 0;
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && link.length !== 0) {
+      addTabs(link);
+      setLink("");
+    }
+  };
 
   const handleImport = () => {
-    addTabs(links);
-    setLinks("");
+    addTabs(link);
+    setLink("");
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <textarea
-        className="bg-neutral-50 border border-neutral-300 rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-neutral-400"
-        value={links}
-        onChange={(e) => setLinks(e.target.value)}
-      ></textarea>
+    <div className="flex gap-2">
+      <input
+        className="flex-1 w-full bg-neutral-50 border border-neutral-300 rounded-lg px-4 py-2.5 text-sm font-sans focus:outline-none focus:border-neutral-400"
+        type="text"
+        value={link}
+        onChange={(e) => setLink(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Paste a URL..."
+      />
       <button
-        className="self-end bg-neutral-900 text-white rounded-lg px-4 py-2 text-sm disabled:bg-neutral-200 disabled:text-neutral-400"
-        onClick={handleImport}
+        className="bg-neutral-900 text-white text-sm rounded-lg px-4 py-2 disabled:bg-neutral-200 disabled:text-neutral-400 cursor-pointer"
         disabled={isDisabled}
+        onClick={handleImport}
       >
-        Add Tabs
+        ↵
       </button>
     </div>
   );
