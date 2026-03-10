@@ -20,15 +20,35 @@ export function TabList({ search }: TabListProps) {
     );
   });
 
+  if (filteredTabs.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-neutral-300 text-sm">
+          Paste URLs to start saving tabs
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div className="overflow-hidden">
       {filteredTabs.map((tab) => (
-        <div key={tab.id} className="flex items-center gap-3 py-2">
-          <img src={tab.favicon} className="w-4 h-4" />
-          <a href={tab.url} target="_blank" className="text-sm">
+        <div
+          key={tab.id}
+          className="flex items-center gap-3 py-2 border-b border-neutral-500 last:border-b-0 hover:bg-neutral-50"
+        >
+          <img src={tab.favicon} className="w-4 h-4 rounded-sm" />
+          <a
+            href={tab.url}
+            target="_blank"
+            className="text-sm text-neutral-900"
+          >
             {tab.domain}
           </a>
-          <button className="cursor-pointer" onClick={() => deleteTab(tab.id)}>
+          <button
+            className="text-neutral-300 hover:text-red-500 cursor-pointer"
+            onClick={() => deleteTab(tab.id)}
+          >
             ⨯
           </button>
         </div>

@@ -9,15 +9,15 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="max-w-2xl mx-auto pt-10 px-8">
+    <div className="min-h-screen bg-white font-sans antialiased">
+      <header className="max-w-2xl mx-auto pt-10 px-8 border-b border-neutral-300 pb-2.5">
         <h1 className="text-2xl font-bold tracking-tight">TabVault</h1>
         <p className="text-sm text-neutral-400 mt-1">
           {tabCount} {tabCount === 1 ? "tab" : "tabs"} saved
         </p>
       </header>
 
-      <main className="max-w-2xl mx-auto px-8 mt-6">
+      <main className="max-w-2xl mx-auto px-8 mt-6 flex flex-col gap-4">
         <SearchInput onSearch={setSearchQuery} />
         <QuickAddInput />
         <TabList search={searchQuery} />
