@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useStore } from "@/store";
-import { QuickAddInput } from "./features/categories/components/QuickAddInput";
+import { QuickAddInput } from "@/features/tabs/components/QuickAddInput";
 import { TabList } from "./features/tabs/components/TabList";
+import { SearchInput } from "./features/search/components/SearchInput";
 
 function App() {
   const tabCount = useStore((state) => state.tabs.length);
+  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <div className="min-h-screen bg-white">
@@ -15,8 +18,9 @@ function App() {
       </header>
 
       <main className="max-w-2xl mx-auto px-8 mt-6">
+        <SearchInput onSearch={setSearchQuery} />
         <QuickAddInput />
-        <TabList />
+        <TabList search={searchQuery} />
       </main>
     </div>
   );
