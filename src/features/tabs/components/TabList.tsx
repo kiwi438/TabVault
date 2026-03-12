@@ -2,13 +2,16 @@ import { useStore } from "@/store";
 
 interface TabListProps {
   search: string;
+  category: string;
 }
 
-export function TabList({ search }: TabListProps) {
+export function TabList({ search, category }: TabListProps) {
   const tabs = useStore((state) => state.tabs);
   const deleteTab = useStore((state) => state.deleteTab);
 
   const filteredTabs = tabs.filter((tab) => {
+    if (category !== "all" && tab.categoryId !== category) return false;
+
     if (!search) return true;
 
     const query = search.toLowerCase();

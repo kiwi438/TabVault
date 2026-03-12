@@ -4,11 +4,14 @@ import { QuickAddInput } from "@/features/tabs/components/QuickAddInput";
 import { TabList } from "./features/tabs/components/TabList";
 import { SearchInput } from "./features/search/components/SearchInput";
 import { TabImportModal } from "./features/tabs/components/TabImportModal";
+import { CategoryBar } from "./features/categories/components/CategoryBar";
 
 function App() {
+  const [category, setCategory] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const tabCount = useStore((state) => state.tabs.length);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -34,13 +37,14 @@ function App() {
       </header>
 
       <main className="max-w-2xl mx-auto px-8 mt-6 flex flex-col gap-4">
+        <CategoryBar selected={category} onSelect={setCategory} />
         <TabImportModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
         />
         <SearchInput onSearch={setSearchQuery} />
         <QuickAddInput />
-        <TabList search={searchQuery} />
+        <TabList search={searchQuery} category={category} />
       </main>
     </div>
   );

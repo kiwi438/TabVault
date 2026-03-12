@@ -13,6 +13,8 @@ export function SearchInput({ onSearch }: SearchInputProps) {
     onSearch(debouncedValue);
   }, [debouncedValue, onSearch]);
 
+  // Добавить Search при нажатии "/" и выскакивает модальное окно?
+
   return (
     <div>
       <input
