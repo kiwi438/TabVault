@@ -28,7 +28,7 @@ export function TabImportModal({ isOpen, onClose }: TabImportModalProps) {
     onClose();
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && validUrlCount > 0) {
       handleImport();
     }
@@ -38,9 +38,15 @@ export function TabImportModal({ isOpen, onClose }: TabImportModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <h2 className="text-base font-semibold tracking-tight mb-4">
-        Import tabs:
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold tracking-tight">Import tabs:</h2>
+        <button
+          className="text-xl text-neutral-400 transition-colors hover:text-red-500 cursor-pointer"
+          onClick={onClose}
+        >
+          ×
+        </button>
+      </div>
       <textarea
         className="w-full h-40 bg-neutral-50 border border-neutral-200 rounded-lg px-4 py-3 text-sm font-mono resize-none focus:outline-none focus:border-neutral-400"
         value={text}

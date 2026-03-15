@@ -25,7 +25,15 @@ export function AddCategoryModal({ isOpen, onClose }: AddCategoryModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <h2>New Category</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold tracking-tight">New Category</h2>
+        <button
+          className="text-xl text-neutral-400 hover:text-red-500 transition-colors cursor-pointer"
+          onClick={onClose}
+        >
+          ×
+        </button>
+      </div>
       <input
         className="w-full bg-neutral-50 border border-neutral-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-neutral-400"
         value={categoryName}
@@ -47,6 +55,8 @@ export function AddCategoryModal({ isOpen, onClose }: AddCategoryModalProps) {
         onClick={() => {
           addCategory(categoryName, categoryColor);
           onClose();
+          setCategoryName("");
+          setCategoryColor(COLORS[0]);
         }}
       >
         Create

@@ -11,10 +11,12 @@ interface TabVaultState {
 
   addTabs: (raw: string) => number;
   deleteTab: (id: string) => void;
+  deleteTabs: (ids: string[]) => void;
   moveTab: (id: string, categoryId: string) => void;
+  moveTabs: (ids: string[], categoryId: string) => void;
 
   addCategory: (name: string, color: string) => void;
-  deleteCategory: (id: string) => void;
+  deleteCategory: (id: string, mode: "move" | "delete") => void;
 }
 
 const DEFAULT_CATEGORIES: Category[] = [
@@ -51,10 +53,24 @@ export const useStore = create<TabVaultState>()(
         set((state) => ({ tabs: state.tabs.filter((tab) => tab.id !== id) }));
       },
 
+      deleteTabs: (ids) => {
+        set((state) => ({
+          tabs: state.tabs.filter((tab) => !ids.includes(tab.id)),
+        }));
+      },
+
       moveTab: (id, categoryId) => {
         set((state) => ({
           tabs: state.tabs.map((tab) =>
             tab.id === id ? { ...tab, categoryId } : tab,
+          ),
+        }));
+      },
+
+      moveTabs: (ids, categoryId) => {
+        set((state) => ({
+          tabs: state.tabs.map((tab) =>
+            ids.includes(tab.id) ? { ...tab, categoryId } : tab,
           ),
         }));
       },
@@ -65,12 +81,15 @@ export const useStore = create<TabVaultState>()(
         set((state) => ({ categories: [newCategory, ...state.categories] }));
       },
 
-      deleteCategory: (id) => {
+      deleteCategory: (id, mode) => {
         set((state) => ({
           categories: state.categories.filter((cat) => cat.id !== id),
-          tabs: state.tabs.map((tab) =>
-            tab.categoryId === id ? { ...tab, categoryId: "inbox" } : tab,
-          ),
+          tabs:
+            mode === "move"
+              ? state.tabs.map((tab) =>
+                  tab.categoryId === id ? { ...tab, categoryId: "inbox" } : tab,
+                )
+              : state.tabs.filter((tab) => tab.categoryId !== id),
         }));
       },
     }),

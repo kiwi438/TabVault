@@ -1,4 +1,5 @@
-import { useEffect, ReactNode } from "react";
+import { useEffect } from "react";
+import type { ReactNode } from "react";
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,7 +20,7 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return;
+  if (!isOpen) return null;
 
   return (
     <div
