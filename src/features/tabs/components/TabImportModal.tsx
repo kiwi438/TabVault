@@ -11,6 +11,7 @@ interface TabImportModalProps {
 export function TabImportModal({ isOpen, onClose }: TabImportModalProps) {
   const [text, setText] = useState("");
   const addTabs = useStore((state) => state.addTabs);
+  const addToast = useStore((state) => state.addToast);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -23,7 +24,9 @@ export function TabImportModal({ isOpen, onClose }: TabImportModalProps) {
     .filter((parsed) => parsed !== null).length;
 
   const handleImport = () => {
-    addTabs(text);
+    const count = addTabs(text);
+
+    addToast(`Added ${count} tabs`);
     setText("");
     onClose();
   };

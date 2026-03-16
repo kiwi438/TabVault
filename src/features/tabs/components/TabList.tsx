@@ -1,5 +1,10 @@
 import { useStore } from "@/store";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { TabItem } from "./TabItem";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 interface TabListProps {
   search: string;
@@ -9,11 +14,14 @@ interface TabListProps {
 export function TabList({ search, category }: TabListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveTarget, setMoveTarget] = useState("");
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+
   const tabs = useStore((state) => state.tabs);
   const moveTabs = useStore((state) => state.moveTabs);
   const deleteTab = useStore((state) => state.deleteTab);
   const deleteTabs = useStore((state) => state.deleteTabs);
   const categories = useStore((state) => state.categories);
+  const addToast = useStore((state) => state.addToast);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -54,6 +62,40 @@ export function TabList({ search, category }: TabListProps) {
     );
   }
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+      const pressed = e.key;
+
+      if (["ArrowDown", "ArrowUp", "Enter", "Backspace"].includes(pressed)) {
+        e.preventDefault();
+      }
+
+      if (pressed === "ArrowDown")
+        setFocusedIndex((prev) => Math.min(prev + 1, filteredTabs.length - 1));
+      if (pressed === "ArrowUp")
+        setFocusedIndex((prev) =>
+          prev === -1 ? filteredTabs.length - 1 : Math.max(prev - 1, 0),
+        );
+      if (pressed === "Enter") {
+        if (focusedIndex >= 0)
+          window.open(filteredTabs[focusedIndex].url, "_blank");
+      }
+      if (pressed === "Backspace") {
+        if (focusedIndex >= 0) {
+          addToast("Tab deleted");
+          deleteTab(filteredTabs[focusedIndex].id);
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handler);
+
+    return () => document.removeEventListener("keydown", handler);
+  }, [focusedIndex, filteredTabs]);
+
   return (
     <div className="flex-col justiy-between overflow-hidden">
       <div
@@ -64,6 +106,7 @@ export function TabList({ search, category }: TabListProps) {
           <select
             value={moveTarget}
             onChange={(e) => {
+              addToast(`Moved ${selectedIds.size} tabs`);
               moveTabs([...selectedIds], e.target.value);
               setMoveTarget("");
               clearSelection();
@@ -87,6 +130,7 @@ export function TabList({ search, category }: TabListProps) {
           <button
             className="ml-auto text-neutral-400 hover:text-red-500 cursor-pointer"
             onClick={() => {
+              addToast(`Deleted ${selectedIds.size} tabs`);
               deleteTabs([...selectedIds]);
               clearSelection();
             }}
@@ -95,33 +139,24 @@ export function TabList({ search, category }: TabListProps) {
           </button>
         </div>
       </div>
-      {filteredTabs.map((tab) => (
-        <div
-          key={tab.id}
-          className="flex items-center gap-3 py-2 border-b border-neutral-500 last:border-b-0 hover:bg-neutral-50"
-        >
-          <input
-            type="checkbox"
-            className="cursor-pointer"
-            checked={selectedIds.has(tab.id)}
-            onChange={() => toggleSelect(tab.id)}
+      <SortableContext
+        items={filteredTabs.map((tab) => tab.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        {filteredTabs.map((tab) => (
+          <TabItem
+            key={tab.id}
+            tab={tab}
+            isSelected={selectedIds.has(tab.id)}
+            onToggle={() => toggleSelect(tab.id)}
+            onDelete={() => {
+              addToast("Tab deleted");
+              deleteTab(tab.id);
+            }}
+            isFocused={focusedIndex === filteredTabs.indexOf(tab)}
           />
-          <img src={tab.favicon} className="w-4 h-4 rounded-sm" />
-          <a
-            href={tab.url}
-            target="_blank"
-            className="text-sm text-neutral-900"
-          >
-            {tab.domain}
-          </a>
-          <button
-            className="text-neutral-300 hover:text-red-500 cursor-pointer"
-            onClick={() => deleteTab(tab.id)}
-          >
-            ×
-          </button>
-        </div>
-      ))}
+        ))}
+      </SortableContext>
     </div>
   );
 }
