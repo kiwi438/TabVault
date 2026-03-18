@@ -45,7 +45,7 @@ function App() {
       <header className="max-w-2xl mx-auto px-4 sm:px-8 pt-6 sm:pt-10 border-b border-neutral-300 pb-2.5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">TabVault</h1>
+            <h1 className="text-2xl font-bold tracking-tight">TabVaulty</h1>
             <p className="text-sm text-neutral-400 mt-1">
               {tabCount} {tabCount === 1 ? "tab" : "tabs"} saved
             </p>
