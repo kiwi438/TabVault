@@ -3,7 +3,7 @@ export interface Tab {
   url: string;
   title: string;
   domain: string;
-  favicon: string;
+  favicon: string | null;
   categoryId: string;
   createdAt: number;
 }

@@ -28,6 +28,7 @@ export function AddCategoryModal({ isOpen, onClose }: AddCategoryModalProps) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold tracking-tight">New Category</h2>
         <button
+          aria-label="Close"
           className="text-xl text-neutral-400 hover:text-red-500 transition-colors cursor-pointer"
           onClick={onClose}
         >
@@ -42,6 +43,7 @@ export function AddCategoryModal({ isOpen, onClose }: AddCategoryModalProps) {
       <div className="flex gap-2 mt-4">
         {COLORS.map((color) => (
           <button
+            aria-label={`Select color ${color}`}
             className={`w-7 h-7 rounded-full cursor-pointer ${color === categoryColor ? "ring-2 ring-offset-2 ring-neutral-900" : ""}`}
             key={color}
             onClick={() => setCategoryColor(color)}

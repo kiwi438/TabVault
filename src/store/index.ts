@@ -5,6 +5,8 @@ import type { Category } from "@/features/categories/types";
 import { generateId } from "@/shared/utils/generateId";
 import { parseUrl } from "@/features/tabs/utils/parseUrl";
 import { arrayMove } from "@dnd-kit/sortable";
+import { supabase } from "@/shared/lib/supabase";
+import { toDbCategory, toDbTab } from "@/shared/utils/dbMapping";
 
 interface Toast {
   id: string;
@@ -33,11 +35,28 @@ interface TabVaultState {
 
   saveSnapshot: () => void;
   undo: () => void;
+
+  setTabs: (tabs: Tab[]) => void;
+  setCategories: (cat: Category[]) => void;
+  clearStore: () => void;
 }
 
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: "inbox", name: "Inbox", color: "#000000", isDefault: true },
+  {
+    id: "inbox",
+    name: "Inbox",
+    color: "#000000",
+    isDefault: true,
+    createdAt: Date.now(),
+  },
 ];
+
+async function getUserId(): Promise<string | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.user?.id ?? null;
+}
 
 export const useStore = create<TabVaultState>()(
   persist(
@@ -64,47 +83,122 @@ export const useStore = create<TabVaultState>()(
 
         set((state) => ({ tabs: [...newTabs, ...state.tabs] }));
 
+        getUserId().then((userId) => {
+          if (!userId) return;
+          supabase
+            .from("tabs")
+            .insert(newTabs.map((tab, i) => toDbTab(tab, userId, i)))
+            .then(({ error }) => {
+              if (error) console.error(error);
+            });
+        });
+
         return newTabs.length;
       },
 
       deleteTab: (id) => {
         get().saveSnapshot();
+
         set((state) => ({ tabs: state.tabs.filter((tab) => tab.id !== id) }));
+
+        getUserId().then((userId) => {
+          if (!userId) return;
+          supabase
+            .from("tabs")
+            .delete()
+            .eq("id", id)
+            .then(({ error }) => {
+              if (error) console.error(error);
+            });
+        });
       },
 
       deleteTabs: (ids) => {
         get().saveSnapshot();
+
         set((state) => ({
           tabs: state.tabs.filter((tab) => !ids.includes(tab.id)),
         }));
+
+        getUserId().then((userId) => {
+          if (!userId) return;
+          supabase
+            .from("tabs")
+            .delete()
+            .in("id", ids)
+            .then(({ error }) => {
+              if (error) console.error(error);
+            });
+        });
       },
 
       moveTab: (id, categoryId) => {
         get().saveSnapshot();
+
         set((state) => ({
           tabs: state.tabs.map((tab) =>
             tab.id === id ? { ...tab, categoryId } : tab,
           ),
         }));
+
+        getUserId().then((userId) => {
+          if (!userId) return;
+          supabase
+            .from("tabs")
+            .update({ category_id: categoryId })
+            .eq("id", id)
+            .then(({ error }) => {
+              if (error) console.error(error);
+            });
+        });
       },
 
       moveTabs: (ids, categoryId) => {
         get().saveSnapshot();
+
         set((state) => ({
           tabs: state.tabs.map((tab) =>
             ids.includes(tab.id) ? { ...tab, categoryId } : tab,
           ),
         }));
+
+        getUserId().then((userId) => {
+          if (!userId) return;
+          supabase
+            .from("tabs")
+            .update({ category_id: categoryId })
+            .in("id", ids)
+            .then(({ error }) => {
+              if (error) console.error(error);
+            });
+        });
       },
 
       addCategory: (name, color) => {
-        const newCategory = { id: generateId(), name, color, isDefault: false };
+        const newCategory = {
+          id: generateId(),
+          name,
+          color,
+          isDefault: false,
+          createdAt: Date.now(),
+        };
 
         set((state) => ({ categories: [...state.categories, newCategory] }));
+
+        getUserId().then((userId) => {
+          if (!userId) return;
+          supabase
+            .from("categories")
+            .insert(toDbCategory(newCategory, userId))
+            .then(({ error }) => {
+              if (error) console.error(error);
+            });
+        });
       },
 
       deleteCategory: (id, mode) => {
         get().saveSnapshot();
+
         set((state) => ({
           categories: state.categories.filter((cat) => cat.id !== id),
           tabs:
@@ -114,6 +208,36 @@ export const useStore = create<TabVaultState>()(
                 )
               : state.tabs.filter((tab) => tab.categoryId !== id),
         }));
+
+        getUserId().then((userId) => {
+          if (!userId) return;
+
+          supabase
+            .from("categories")
+            .delete()
+            .eq("id", id)
+            .then(({ error }) => {
+              if (error) console.error(error);
+            });
+
+          if (mode === "move") {
+            supabase
+              .from("tabs")
+              .update({ category_id: "inbox" })
+              .eq("category_id", id)
+              .then(({ error }) => {
+                if (error) console.error(error);
+              });
+          } else {
+            supabase
+              .from("tabs")
+              .delete()
+              .eq("category_id", id)
+              .then(({ error }) => {
+                if (error) console.error(error);
+              });
+          }
+        });
       },
 
       addToast: (message) => {
@@ -136,6 +260,20 @@ export const useStore = create<TabVaultState>()(
           // arrayMove(arr, from, to)
           return { tabs: arrayMove(state.tabs, active, over) };
         });
+
+        const tabs = get().tabs;
+        getUserId().then((userId) => {
+          if (!userId) return;
+          tabs.forEach((tab, i) => {
+            supabase
+              .from("tabs")
+              .update({ position: i })
+              .eq("id", tab.id)
+              .then(({ error }) => {
+                if (error) console.error(error);
+              });
+          });
+        });
       },
 
       saveSnapshot: () => {
@@ -154,6 +292,13 @@ export const useStore = create<TabVaultState>()(
           };
         });
       },
+
+      setTabs: (tabs) => set({ tabs }),
+
+      setCategories: (categories) => set({ categories }),
+
+      clearStore: () =>
+        set({ tabs: [], categories: DEFAULT_CATEGORIES, history: null }),
     }),
     {
       name: "tabvault-storage",

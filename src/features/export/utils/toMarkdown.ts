@@ -1,5 +1,6 @@
 import type { Tab } from "@/features/tabs/types";
 import type { Category } from "@/features/categories/types";
+import { downloadFile } from "./downloadFile";
 
 export function toMarkdown(tabs: Tab[], categories: Category[]) {
   const sections = categories
@@ -16,11 +17,6 @@ export function toMarkdown(tabs: Tab[], categories: Category[]) {
     .filter((section) => section !== null);
 
   const markdown = sections.join("\n\n");
-  const blob = new Blob([markdown], { type: "text/markdown" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "tabvault.md";
-  a.click();
-  URL.revokeObjectURL(url);
+
+  downloadFile(markdown, "tabvault.md", "text/markdown");
 }

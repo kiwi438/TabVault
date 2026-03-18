@@ -3,4 +3,5 @@ export interface Category {
   name: string;
   color: string;
   isDefault: boolean;
+  createdAt: number;
 }

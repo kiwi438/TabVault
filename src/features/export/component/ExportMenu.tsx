@@ -28,7 +28,7 @@ export function ExportMenu() {
   return (
     <div ref={dropDownMenu} className="relative">
       <button
-        className="text-sm text-neutral-500 hover:text-neutral-900 cursor-pointer"
+        className="py-2 text-sm text-neutral-500 hover:text-neutral-900 cursor-pointer"
         onClick={() => setIsOpen(!isOpen)}
       >
         Export

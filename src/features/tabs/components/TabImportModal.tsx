@@ -15,7 +15,10 @@ export function TabImportModal({ isOpen, onClose }: TabImportModalProps) {
 
   useEffect(() => {
     if (!isOpen) return;
-    navigator.clipboard.readText().then((text) => setText(text));
+    navigator.clipboard
+      .readText()
+      .then((text) => setText(text))
+      .catch(() => {});
   }, [isOpen]);
 
   const validUrlCount = text
@@ -44,6 +47,7 @@ export function TabImportModal({ isOpen, onClose }: TabImportModalProps) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold tracking-tight">Import tabs:</h2>
         <button
+          aria-label="Close"
           className="text-xl text-neutral-400 transition-colors hover:text-red-500 cursor-pointer"
           onClick={onClose}
         >

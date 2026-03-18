@@ -1,10 +1,11 @@
 import { useStore } from "@/store";
-import { useEffect, useState } from "react";
-import { TabItem } from "./TabItem";
+import { useState } from "react";
+import { TabItem } from "@/features/tabs/components/TabItem";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useTabKeyboardNav } from "@/features/tabs/hooks/useTabKeyboardNav";
 
 interface TabListProps {
   search: string;
@@ -14,7 +15,6 @@ interface TabListProps {
 export function TabList({ search, category }: TabListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveTarget, setMoveTarget] = useState("");
-  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
 
   const tabs = useStore((state) => state.tabs);
   const moveTabs = useStore((state) => state.moveTabs);
@@ -52,6 +52,8 @@ export function TabList({ search, category }: TabListProps) {
     );
   });
 
+  const focusedIndex = useTabKeyboardNav(filteredTabs, { deleteTab, addToast });
+
   if (filteredTabs.length === 0) {
     return (
       <div className="text-center py-16">
@@ -62,42 +64,8 @@ export function TabList({ search, category }: TabListProps) {
     );
   }
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const tag = document.activeElement?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-
-      const pressed = e.key;
-
-      if (["ArrowDown", "ArrowUp", "Enter", "Backspace"].includes(pressed)) {
-        e.preventDefault();
-      }
-
-      if (pressed === "ArrowDown")
-        setFocusedIndex((prev) => Math.min(prev + 1, filteredTabs.length - 1));
-      if (pressed === "ArrowUp")
-        setFocusedIndex((prev) =>
-          prev === -1 ? filteredTabs.length - 1 : Math.max(prev - 1, 0),
-        );
-      if (pressed === "Enter") {
-        if (focusedIndex >= 0)
-          window.open(filteredTabs[focusedIndex].url, "_blank");
-      }
-      if (pressed === "Backspace") {
-        if (focusedIndex >= 0) {
-          addToast("Tab deleted");
-          deleteTab(filteredTabs[focusedIndex].id);
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handler);
-
-    return () => document.removeEventListener("keydown", handler);
-  }, [focusedIndex, filteredTabs]);
-
   return (
-    <div className="flex-col justiy-between overflow-hidden">
+    <div className="flex-col justify-between overflow-hidden">
       <div
         className={`overflow-hidden transition-all duration-200 ${selectedIds.size > 0 ? "max-h-16 opacity-100 mb-2" : "max-h-0 opacity-0"}`}
       >
@@ -143,7 +111,7 @@ export function TabList({ search, category }: TabListProps) {
         items={filteredTabs.map((tab) => tab.id)}
         strategy={verticalListSortingStrategy}
       >
-        {filteredTabs.map((tab) => (
+        {filteredTabs.map((tab, index) => (
           <TabItem
             key={tab.id}
             tab={tab}
@@ -153,7 +121,7 @@ export function TabList({ search, category }: TabListProps) {
               addToast("Tab deleted");
               deleteTab(tab.id);
             }}
-            isFocused={focusedIndex === filteredTabs.indexOf(tab)}
+            isFocused={focusedIndex === index}
           />
         ))}
       </SortableContext>

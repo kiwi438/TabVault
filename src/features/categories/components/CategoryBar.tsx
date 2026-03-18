@@ -13,12 +13,12 @@ export function CategoryBar({ selected, onSelect }: CategoryBarProps) {
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 overflow-auto scrollbar-hide">
       <button
         className={
           selected === "all"
-            ? "bg-neutral-900 text-white rounded-full px-3 py-1 text-sm cursor-pointer"
-            : "bg-neutral-100 rounded-full px-3 py-1 text-sm cursor-pointer"
+            ? "bg-neutral-900 text-white rounded-full px-3 py-2 text-sm cursor-pointer"
+            : "bg-neutral-100 rounded-full px-3 py-2 text-sm cursor-pointer"
         }
         onClick={() => onSelect("all")}
       >

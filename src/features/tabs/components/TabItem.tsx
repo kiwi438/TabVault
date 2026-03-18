@@ -7,7 +7,7 @@ interface TabItemProps {
   isSelected: boolean;
   onToggle: () => void;
   onDelete: () => void;
-  isFocused: boolean;
+  isFocused?: boolean;
 }
 
 export function TabItem({
@@ -37,12 +37,13 @@ export function TabItem({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className={`min-h-[44px] flex px-2 items-center justify-between gap-3 py-2 border-b border-neutral-500 last:border-b-0 hover:bg-neutral-50
+      className={`min-h-11 flex px-2 items-center justify-between gap-3 py-2 border-b border-neutral-500 last:border-b-0 hover:bg-neutral-50
         focus:outline-none
         ${isFocused ? "bg-neutral-100" : ""}`}
     >
       <span
         {...listeners}
+        aria-label="Drag to reorder"
         className="cursor-grab text-neutral-300 hover:text-neutral-500"
       >
         ⠿
@@ -51,15 +52,21 @@ export function TabItem({
         <input
           type="checkbox"
           className="cursor-pointer w-5 h-5"
+          aria-label={`Select ${tab.domain}`}
           checked={isSelected}
           onChange={onToggle}
         />
-        <img src={tab.favicon} className="w-4 h-4 rounded-sm" />
+        <img
+          src={tab.favicon ?? undefined}
+          alt={`${tab.domain} favicon`}
+          className="w-4 h-4 rounded-sm"
+        />
         <a href={tab.url} target="_blank" className="text-sm text-neutral-900">
           {tab.domain}
         </a>
       </div>
       <button
+        aria-label={`Delete ${tab.domain}`}
         className="text-xl text-neutral-300 hover:text-red-500 cursor-pointer"
         onClick={() => onDelete()}
       >

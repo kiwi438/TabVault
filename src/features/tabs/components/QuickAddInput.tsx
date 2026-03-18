@@ -29,6 +29,7 @@ export function QuickAddInput() {
         placeholder="Paste a URL..."
       />
       <button
+        aria-label="Add URL"
         className="bg-neutral-900 text-white text-sm rounded-lg px-4 py-2 disabled:bg-neutral-200 disabled:text-neutral-400 cursor-pointer"
         disabled={isDisabled}
         onClick={handleImport}
