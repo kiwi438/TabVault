@@ -1,5 +1,7 @@
 import { useStore } from "@/store";
-import { useState } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { useState, useRef } from "react";
 import { TabItem } from "@/features/tabs/components/TabItem";
 import {
   SortableContext,
@@ -14,7 +16,10 @@ interface TabListProps {
 
 export function TabList({ search, category }: TabListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [moveTarget, setMoveTarget] = useState("");
+
+  const listRef = useRef<HTMLDivElement>(null);
+  const bulkMenuRef = useRef<HTMLDivElement>(null);
+  const hasAnimated = useRef(false);
 
   const tabs = useStore((state) => state.tabs);
   const moveTabs = useStore((state) => state.moveTabs);
@@ -54,31 +59,69 @@ export function TabList({ search, category }: TabListProps) {
 
   const focusedIndex = useTabKeyboardNav(filteredTabs, { deleteTab, addToast });
 
-  if (filteredTabs.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <p className="text-neutral-300 text-sm">
-          Paste URLs to start saving tabs
-        </p>
-      </div>
-    );
-  }
+  useGSAP(
+    () => {
+      if (hasAnimated.current) return;
+      if (filteredTabs.length === 0) return;
+      hasAnimated.current = true;
+
+      gsap.from(".tab-item", {
+        y: 20,
+        autoAlpha: 0,
+        duration: 0.4,
+        stagger: 0.05,
+        ease: "power2.out",
+      });
+    },
+    { scope: listRef, dependencies: [filteredTabs] },
+  );
+
+  useGSAP(
+    () => {
+      if (!bulkMenuRef.current) return;
+
+      if (selectedIds.size > 0) {
+        gsap.to(bulkMenuRef.current, {
+          height: "auto",
+          opacity: 1,
+          marginBottom: 8,
+          duration: 0.3,
+          ease: "power2.out",
+        });
+      } else {
+        gsap.to(bulkMenuRef.current, {
+          height: 0,
+          opacity: 0,
+          marginBottom: 0,
+          duration: 0.3,
+          ease: "power2.in",
+        });
+      }
+    },
+    { dependencies: [selectedIds.size] },
+  );
 
   return (
     <div className="flex-col justify-between overflow-hidden">
-      <div
-        className={`overflow-hidden transition-all duration-200 ${selectedIds.size > 0 ? "max-h-16 opacity-100 mb-2" : "max-h-0 opacity-0"}`}
-      >
-        <div className="flex items-center gap-3 bg-neutral-800 text-white text-sm rounded-xl px-4 py-2.5 mb-2">
+      {filteredTabs.length === 0 && (
+        <div className="text-center py-16">
+          <p className="text-neutral-300 text-sm">
+            Paste URLs to start saving tabs
+          </p>
+        </div>
+      )}
+
+      <div ref={bulkMenuRef} className="h-0 opacity-0 overflow-hidden">
+        <div className="flex items-center gap-3 bg-neutral-800 text-white text-sm rounded-xl px-4 py-2.5">
           <span className="text-neutral-400">{selectedIds.size} selected</span>
           <select
-            value={moveTarget}
+            value=""
             onChange={(e) => {
               addToast(`Moved ${selectedIds.size} tabs`);
               moveTabs([...selectedIds], e.target.value);
-              setMoveTarget("");
               clearSelection();
             }}
+            className="bg-transparent outline-none cursor-pointer"
           >
             <option value="" disabled>
               Move to...
@@ -107,24 +150,29 @@ export function TabList({ search, category }: TabListProps) {
           </button>
         </div>
       </div>
-      <SortableContext
-        items={filteredTabs.map((tab) => tab.id)}
-        strategy={verticalListSortingStrategy}
-      >
-        {filteredTabs.map((tab, index) => (
-          <TabItem
-            key={tab.id}
-            tab={tab}
-            isSelected={selectedIds.has(tab.id)}
-            onToggle={() => toggleSelect(tab.id)}
-            onDelete={() => {
-              addToast("Tab deleted");
-              deleteTab(tab.id);
-            }}
-            isFocused={focusedIndex === index}
-          />
-        ))}
-      </SortableContext>
+
+      <div ref={listRef}>
+        {filteredTabs.length > 0 && (
+          <SortableContext
+            items={filteredTabs.map((tab) => tab.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {filteredTabs.map((tab, index) => (
+              <TabItem
+                key={tab.id}
+                tab={tab}
+                isSelected={selectedIds.has(tab.id)}
+                onToggle={() => toggleSelect(tab.id)}
+                onDelete={() => {
+                  addToast("Tab deleted");
+                  deleteTab(tab.id);
+                }}
+                isFocused={focusedIndex === index}
+              />
+            ))}
+          </SortableContext>
+        )}
+      </div>
     </div>
   );
 }

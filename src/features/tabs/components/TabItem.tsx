@@ -37,7 +37,7 @@ export function TabItem({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className={`min-h-11 flex px-2 items-center justify-between gap-3 py-2 border-b border-neutral-500 last:border-b-0 hover:bg-neutral-50
+      className={`tab-item min-h-11 flex px-2 items-center justify-between gap-3 py-2 border-b border-neutral-500 last:border-b-0 hover:bg-neutral-50
         focus:outline-none
         ${isFocused ? "bg-neutral-100" : ""}`}
     >
