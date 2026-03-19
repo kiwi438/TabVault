@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useStore } from "@/store";
 import { QuickAddInput } from "@/features/tabs/components/QuickAddInput";
 import { TabList } from "@/features/tabs/components/TabList";
@@ -15,6 +15,8 @@ import { AuthPage } from "@/features/auth/components/AuthPage";
 import { useKeyboardShortcuts } from "@/shared/hooks/useKeyboardShortcuts";
 import { useSupabaseSync } from "@/features/auth/hooks/useSupabaseSync";
 import { useDragAndDrop } from "@/features/tabs/hooks/useDragAndDrop";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 function App() {
   const [category, setCategory] = useState("all");
@@ -23,11 +25,58 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
 
+  const headerRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+
+  const hasHeaderAnimated = useRef(false);
+
   const undo = useStore((state) => state.undo);
 
   const { user, loading, signOut } = useAuth();
 
   const { activeTab, setActiveId, handleDragEnd } = useDragAndDrop();
+
+  useGSAP(
+    () => {
+      // Сбрасываем флаг, если мы разлогинились, чтобы при следующем входе анимация сработала
+      if (!user) {
+        hasHeaderAnimated.current = false;
+        return;
+      }
+
+      if (loading || hasHeaderAnimated.current) return;
+      if (!headerRef.current || !mainRef.current) return;
+
+      gsap.fromTo(
+        headerRef.current,
+        { y: -15, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.5,
+          ease: "power2.out",
+          clearProps: "all",
+        },
+      );
+
+      gsap.fromTo(
+        mainRef.current,
+        { opacity: 0, y: 15 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.3,
+          delay: 0.2,
+          ease: "power2.out",
+          clearProps: "all",
+          onComplete: () => {
+            hasHeaderAnimated.current = true;
+          },
+        },
+      );
+    },
+    { dependencies: [user, loading] },
+  );
 
   useKeyboardShortcuts({
     onPaste: () => setIsModalOpen(true),
@@ -40,9 +89,12 @@ function App() {
   if (!user) return <AuthPage />;
 
   return (
-    <div className="min-h-screen bg-white font-sans antialiased">
+    <div className="min-h-screen bg-#F5F5F7 font-sans antialiased">
       <Toast />
-      <header className="max-w-2xl mx-auto px-4 sm:px-8 pt-6 sm:pt-10 border-b border-neutral-300 pb-2.5">
+      <header
+        ref={headerRef}
+        className="header-title max-w-2xl mx-auto px-4 sm:px-8 pt-6 sm:pt-10 border-b border-neutral-300 pb-2.5"
+      >
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">TabVaulty</h1>
@@ -70,12 +122,15 @@ function App() {
           handleDragEnd(e);
         }}
       >
-        <main className="max-w-2xl mx-auto px-4 sm:px-8 mt-6 flex flex-col gap-4">
+        <main
+          ref={mainRef}
+          className="main-content max-w-2xl mx-auto px-4 sm:px-8 mt-6 flex flex-col gap-4"
+        >
           <div className="flex items-center gap-2">
             <CategoryBar selected={category} onSelect={setCategory} />
             <button
               aria-label="Add category"
-              className="min-w-11 min-h-11 p-2 rounded-full hover:bg-neutral-500 text-neutral-300 hover:text-neutral-500 cursor-pointer"
+              className="min-w-10 min-h-10 p-1 rounded-full hover:bg-neutral-200 text-neutral-300 hover:text-neutral-500 cursor-pointer"
               onClick={() => setIsAddCategoryModalOpen(true)}
             >
               +

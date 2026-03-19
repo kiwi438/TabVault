@@ -167,18 +167,77 @@ auth.uid()`). Благодаря RLS `anon key`
   `dependencies` — аналог dependency array в
   `useEffect`.
 
-- **Пример каскадного появления:**
+- **clearProps** — удаляет inline стили, которые
+  GSAP добавил на элемент. `clearProps: "all"`
+  убирает все, `clearProps: "opacity,y"` — только
+  указанные. Важно при совместной работе с
+  библиотеками (dnd-kit), которые тоже ставят
+  inline стили. `gsap.set(".el", { clearProps: "all" })`
+  можно вызвать в `onComplete`.
+
+- **onComplete** — callback, вызывается после
+  завершения анимации. При `stagger` вызывается
+  когда **последний** элемент завершит анимацию
+  (если указан на tween, а не на каждом элементе).
+
+- **GSAP + dnd-kit конфликт:** обе библиотеки
+  управляют inline стилями (`transform`, `opacity`).
+  Решение — разделить на два DOM-элемента:
+  внешний div для GSAP (класс `tab-item`, `id`),
+  внутренний div для dnd-kit (`ref`, `style`).
+  Так они не перезаписывают стили друг друга.
+
+- **Несколько useGSAP хуков конфликтуют:**
+  если два `useGSAP` реагируют на одну зависимость
+  (например `filteredTabs`), они срабатывают
+  одновременно в одном рендер-цикле. Флаги
+  (`hasAnimated.current = true`) установленные
+  в одном хуке уже видны во втором, потому что
+  код внутри `useGSAP` выполняется синхронно.
+  **Решение:** объединить связанные анимации
+  в один `useGSAP` с условной логикой внутри.
+
+- **Пример: каскад + добавление в одном хуке:**
   ```ts
   useGSAP(() => {
-    gsap.from(".tab-item", {
-      y: 20,
-      opacity: 0,
-      duration: 0.4,
-      stagger: 0.05,
-      ease: "power2.out"
-    })
-  }, { scope: containerRef })
+    if (filteredTabs.length === 0) return;
+
+    if (!hasAnimated.current) {
+      // Первая загрузка — каскад
+      hasAnimated.current = true;
+      prevTabCount.current = filteredTabs.length;
+      gsap.from(".tab-item", {
+        y: 20, opacity: 0,
+        stagger: 0.05, duration: 0.4,
+        ease: "power2.out",
+        onComplete: () => {
+          gsap.set(".tab-item", { clearProps: "all" });
+        },
+      });
+      return;
+    }
+
+    // Добавление нового таба
+    if (filteredTabs.length > prevTabCount.current) {
+      gsap.from(".tab-item:first-child", {
+        y: -20, opacity: 0,
+        duration: 0.3, ease: "power2.out",
+        clearProps: "all",
+      });
+    }
+    prevTabCount.current = filteredTabs.length;
+  }, { scope: listRef, dependencies: [filteredTabs] });
   ```
+
+- **Скрытие элемента перед анимацией — `style={{ opacity: 0 }}`
+  вместо Tailwind `opacity-0`.** `clearProps: "all"` убирает
+  только inline стили (атрибут `style`), но не CSS-классы.
+  Если скрыть элемент через Tailwind `opacity-0`, после
+  анимации `clearProps` уберёт inline `opacity: 1`, и класс
+  `opacity-0` снова сделает элемент невидимым. С
+  `style={{ opacity: 0 }}` — GSAP анимирует inline opacity
+  до 1, потом `clearProps` убирает inline style, и элемент
+  получает `opacity: 1` по умолчанию из CSS.
 
 - **Анимация скрытия (Exit Animations) в React:** Главная проблема GSAP в React — условный рендеринг (`{condition && <Component />}`). При `false` React мгновенно удаляет элемент из DOM, не давая GSAP проиграть анимацию исчезновения.
   - **Паттерн решения:** Отказаться от условного рендеринга. Элемент должен всегда находиться в DOM, но быть изначально скрытым через CSS (например, `h-0 opacity-0 overflow-hidden`).
@@ -198,6 +257,43 @@ auth.uid()`). Благодаря RLS `anon key`
     }, { dependencies: [isVisible] });
     ```
 
+- **Сброс флагов анимации при смене сессии (Logout/Login):**
+  Если компонент (например, `App`) не размонтируется при выходе пользователя (Logout), флаги вида `hasAnimated.current = true` остаются в памяти. При повторном входе анимация не сработает.
+  **Решение:** Сбрасывать флаги вручную при отсутствии пользователя или смене сессии.
+  ```tsx
+  useGSAP(() => {
+    if (!user) {
+      hasAnimated.current = false; // Сброс при выходе
+      return;
+    }
+    if (hasAnimated.current) return;
+    
+    gsap.fromTo(el, { opacity: 0 }, { opacity: 1 });
+    hasAnimated.current = true;
+  }, [user]);
+  ```
+
 ## React Паттерны
 
+- **Анимация размонтирования компонента (Модалки, Попапы):**
+  В React условный рендеринг (`{isOpen && <Modal />}`) мгновенно удаляет элемент из DOM, не давая библиотекам вроде GSAP проиграть анимацию исчезновения.
+  **Паттерн "Отложенное размонтирование":**
+  1. Создаём локальный стейт `shouldRender` (по умолчанию равен пропсу `isOpen`).
+  2. Обновляем стейт *синхронно* при рендере, если пропс стал `true`:
+     ```tsx
+     if (isOpen && !shouldRender) setShouldRender(true);
+     ```
+  3. Используем `useGSAP`, который реагирует на изменение `isOpen`:
+     - Если `isOpen === true`: проигрываем анимацию появления (например, `gsap.fromTo`).
+     - Если `isOpen === false`: проигрываем анимацию исчезновения (например, `gsap.to`) и **только в `onComplete`** вызываем `setShouldRender(false)`.
+  4. Рендерим компонент на основе `shouldRender`, а не `isOpen`:
+     ```tsx
+     if (!shouldRender) return null;
+     ```
+
 - **Избегание лишнего стейта (Direct Actions):** Если элемент интерфейса (например, `<select>`) используется только для триггера немедленного действия (например, перемещение элементов) и затем должен сброситься к дефолтному состоянию, не нужно создавать для него `useState`. Достаточно жестко задать `value=""` (чтобы всегда отображался placeholder) и передавать `e.target.value` напрямую в обработчик `onChange`.
+
+
+## Git
+
+- **`git restore .`** – восстанавливает данные из последнего коммита

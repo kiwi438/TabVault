@@ -57,23 +57,62 @@ export function TabList({ search, category }: TabListProps) {
     );
   });
 
+  const prevTabCount = useRef(filteredTabs.length);
+  const prevCategory = useRef(category);
+
   const focusedIndex = useTabKeyboardNav(filteredTabs, { deleteTab, addToast });
 
   useGSAP(
     () => {
-      if (hasAnimated.current) return;
       if (filteredTabs.length === 0) return;
-      hasAnimated.current = true;
 
-      gsap.from(".tab-item", {
-        y: 20,
-        autoAlpha: 0,
-        duration: 0.4,
-        stagger: 0.05,
-        ease: "power2.out",
-      });
+      if (!hasAnimated.current) {
+        // Первая загрузка — каскад
+        hasAnimated.current = true;
+        prevTabCount.current = filteredTabs.length;
+
+        gsap.from(".tab-item", {
+          y: 20,
+          opacity: 0,
+          duration: 0.4,
+          stagger: 0.05,
+          ease: "power2.out",
+          onComplete: () => {
+            gsap.set(".tab-item", { clearProps: "all" });
+          },
+        });
+        return;
+      }
+
+      if (category !== prevCategory.current) {
+        prevCategory.current = category;
+        prevTabCount.current = filteredTabs.length;
+
+        gsap.from(".tab-item", {
+          opacity: 0,
+          y: 10,
+          duration: 0.25,
+          stagger: 0.03,
+          ease: "power2.out",
+          clearProps: "all",
+        });
+        return;
+      }
+
+      // Добавление нового таба
+      if (filteredTabs.length > prevTabCount.current && listRef.current) {
+        gsap.from(".tab-item:first-child", {
+          y: -20,
+          opacity: 0,
+          duration: 0.3,
+          ease: "power2.out",
+          clearProps: "all",
+        });
+      }
+
+      prevTabCount.current = filteredTabs.length;
     },
-    { scope: listRef, dependencies: [filteredTabs] },
+    { scope: listRef, dependencies: [filteredTabs, category] },
   );
 
   useGSAP(
@@ -164,8 +203,21 @@ export function TabList({ search, category }: TabListProps) {
                 isSelected={selectedIds.has(tab.id)}
                 onToggle={() => toggleSelect(tab.id)}
                 onDelete={() => {
-                  addToast("Tab deleted");
-                  deleteTab(tab.id);
+                  const el = document.getElementById(`tab-${tab.id}`);
+                  if (!el) return;
+                  el.style.overflow = "hidden";
+                  gsap.to(el, {
+                    height: 0,
+                    opacity: 0,
+                    paddingTop: 0,
+                    paddingBottom: 0,
+                    duration: 0.15,
+                    ease: "power2.in",
+                    onComplete: () => {
+                      addToast("Tab delete");
+                      deleteTab(tab.id);
+                    },
+                  });
                 }}
                 isFocused={focusedIndex === index}
               />
