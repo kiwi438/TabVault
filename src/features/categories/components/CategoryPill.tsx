@@ -47,15 +47,6 @@ export function CategoryPill({
     { dependencies: [selected, isHovered, isOver] },
   );
 
-  const buttonStyle =
-    selected === cat.id
-      ? { backgroundColor: cat.color, color: "white" }
-      : isOver
-        ? { backgroundColor: cat.color + "66", color: "white" }
-        : isHovered
-          ? { backgroundColor: cat.color + "33" }
-          : {};
-
   return (
     <div ref={setNodeRef} className="flex items-center">
       <div

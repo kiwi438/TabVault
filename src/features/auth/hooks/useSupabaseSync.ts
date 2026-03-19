@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/store";
 import { supabase } from "@/shared/lib/supabase";
 import type { Category } from "@/features/categories/types";
@@ -11,6 +11,8 @@ import {
 } from "@/shared/utils/dbMapping";
 
 export function useSupabaseSync(user: User | null) {
+  const [syncing, setSyncing] = useState(true);
+
   const tabs = useStore((state) => state.tabs);
   const setTabs = useStore((state) => state.setTabs);
   const setCategories = useStore((state) => state.setCategories);
@@ -70,6 +72,8 @@ export function useSupabaseSync(user: User | null) {
       }
     };
 
-    fetchData();
+    fetchData().then(() => setSyncing(false));
   }, [user]);
+
+  return { syncing };
 }

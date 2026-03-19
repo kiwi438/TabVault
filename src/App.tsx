@@ -21,23 +21,43 @@ import { useGSAP } from "@gsap/react";
 function App() {
   const [category, setCategory] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const tabCount = useStore((state) => state.tabs.length);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
 
+  const tabCount = useStore((state) => state.tabs.length);
+  const undo = useStore((state) => state.undo);
+  const categories = useStore((state) => state.categories);
+  const selectedCategoryData = categories.find((cat) => cat.id === category);
+
   const headerRef = useRef<HTMLElement>(null);
   const mainRef = useRef<HTMLElement>(null);
-
+  const appRef = useRef<HTMLDivElement>(null);
   const hasHeaderAnimated = useRef(false);
-
-  const undo = useStore((state) => state.undo);
+  const counterRef = useRef<HTMLParagraphElement>(null);
 
   const { user, loading, signOut } = useAuth();
 
   const { activeTab, setActiveId, handleDragEnd } = useDragAndDrop();
 
+  const { syncing } = useSupabaseSync(user);
+
   useGSAP(
     () => {
+      // if (appRef.current) {
+      //   const defaultBg = "#F5F5F7";
+      //   let targetBg = defaultBg;
+
+      //   if (category !== "all" && selectedCategoryData) {
+      //     targetBg = selectedCategoryData.color;
+      //   }
+
+      //   gsap.to(appRef.current, {
+      //     backgroundColor: targetBg,
+      //     duration: 0.5,
+      //     ease: "power2.out",
+      //   });
+      // }
+
       // Сбрасываем флаг, если мы разлогинились, чтобы при следующем входе анимация сработала
       if (!user) {
         hasHeaderAnimated.current = false;
@@ -75,7 +95,20 @@ function App() {
         },
       );
     },
-    { dependencies: [user, loading] },
+    { dependencies: [user, loading, category, selectedCategoryData] },
+  );
+
+  useGSAP(
+    () => {
+      if (!counterRef.current || syncing) return;
+
+      gsap.to(counterRef.current, {
+        opacity: 1,
+        duration: 0.3,
+        clearProps: "all",
+      });
+    },
+    { dependencies: [syncing] },
   );
 
   useKeyboardShortcuts({
@@ -83,13 +116,15 @@ function App() {
     onUndo: undo,
   });
 
-  useSupabaseSync(user);
-
   if (loading) return null;
   if (!user) return <AuthPage />;
 
   return (
-    <div className="min-h-screen bg-#F5F5F7 font-sans antialiased">
+    <div
+      ref={appRef}
+      style={{ backgroundColor: "#F5F5F7" }}
+      className="min-h-screen font-sans antialiased"
+    >
       <Toast />
       <header
         ref={headerRef}
@@ -98,7 +133,11 @@ function App() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">TabVaulty</h1>
-            <p className="text-sm text-neutral-400 mt-1">
+            <p
+              ref={counterRef}
+              style={{ opacity: 0 }}
+              className="text-sm text-neutral-400 mt-1"
+            >
               {tabCount} {tabCount === 1 ? "tab" : "tabs"} saved
             </p>
           </div>
