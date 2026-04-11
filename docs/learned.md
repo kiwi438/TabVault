@@ -1,4 +1,8 @@
 # Learned
+
+## Bun
+
+Нюанс: Bun генерирует bun.lock вместо package-lock.json. Если будешь пушить в репо — добавь в .gitignore строку package-lock.json (на случай если кто-то случайно запустит npm install), и убедись что bun.lock наоборот закоммичен.
   
 ## Tailwind CSS
 
